@@ -1,7 +1,16 @@
-var AsToken = artifacts.require("./AsToken.sol");
+var FFPToken = artifacts.require("./FFP.sol");
 
 module.exports = async function(deployer) {
-  await  deployer.deploy(AsToken);
-  const myToken = await AsToken.deployed()
+  try{
+    console.log('deploying FFP contract')
+    await  deployer.deploy(FFPToken,{nonce:25,gasPrice: web3.utils.toWei("10", "gwei"),
+  });
+    const myToken = await FFPToken.deployed();
+    console.log(myToken)
+  }
+  catch(err){
+    console.log(err)
+  }
+  
 
 };
