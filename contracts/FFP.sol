@@ -8,12 +8,12 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
-contract FLOKIFRUNKPUPPY is ERC20, Ownable {
+contract FFP is ERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
     address public uniswapV2Pair;
-    address public marketingWallet = 0xD04964d70F11dA237d391F2C6079A0b4130acf8B;
+    address public marketingWallet = 0x5bABeef611BcB036aE353245Bcdcc66197f693B1;
     address[] private _excluded; //list of address that are excluded
     address public immutable deadAddress =
         0x000000000000000000000000000000000000dEaD;
@@ -26,11 +26,11 @@ contract FLOKIFRUNKPUPPY is ERC20, Ownable {
     //100% of the fees generated go to holders of the token. The percentage of fees you earn is calculated by the percentage of FFP that you own among holders.
     uint256 public _taxFee = 4; //To reward holders of the token we redistribute 4% of every transaction to all holders of the token
     uint256 private _previousTaxFee = _taxFee;
-    uint256 public _liquidityFee = 4; //If we want the token to go up in value we need the liquidity pool to grow as well. This is why 4% of every transaction goes towards liquidity
+    uint256 public _liquidityFee = 0; //If we want the token to go up in value we need the liquidity pool to grow as well. This is why 4% of every transaction goes towards liquidity
     uint256 private _previousLiquidityFee = _liquidityFee;
     uint256 public _burnFee = 0; //To make coin deflationary % tokens will be burned per transaction
     uint256 private _previousBurnFee = _burnFee;
-    uint256 public _marketingWalletFee = 2; //In order to keep marketing the token successfully 2% of every transaction goes towards marketing
+    uint256 public _marketingWalletFee = 4; //In order to keep marketing the token successfully 2% of every transaction goes towards marketing
     uint256 private _previousMarketingWalletFee = _marketingWalletFee;
     uint256 private numTokensSellToAddToLiquidity = 1 * 10**4 * 10**9; //minimum tokens to be sold to add to liquidity pool
 
@@ -261,12 +261,16 @@ contract FLOKIFRUNKPUPPY is ERC20, Ownable {
         }
 
         //indicates if fee should be deducted from transfer
-        takeFee = true;
+        takeFee = false;
 
         //if any account belongs to _isExcludedFromFee account then remove the fee
-        if (_isExcludedFromFee[from] || _isExcludedFromFee[to]) {
-            takeFee = false;
+         if (
+            (from == uniswapV2Pair || to == uniswapV2Pair) &&
+            !(_isExcludedFromFee[from] || _isExcludedFromFee[to])
+        ) {
+            takeFee = true;
         }
+
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(from, to, amount, takeFee);
@@ -377,12 +381,16 @@ contract FLOKIFRUNKPUPPY is ERC20, Ownable {
         //Temporarily remove fees to transfer to burn address and marketing wallet
         _taxFee = 0;
         _liquidityFee = 0;
-
-        //Send transfers to marketing wallet
+        if(_marketingWalletFee != 0){
+ //Send transfers to marketing wallet
         _transferStandard(sender, marketingWallet, marketingAmt);
+        }
+        if(_burnFee != 0){
+  //Send transfers to burn wallet
+        _transferStandard(sender, deadAddress, burnAmt);
+        }
 
-        //Send transfers to burn wallet
-        _transferStandard(sender, deadAddress, marketingAmt);
+      
 
         //Restore tax and liquidity fees
         _taxFee = _previousTaxFee;
